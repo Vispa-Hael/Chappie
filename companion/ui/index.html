@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Chappie Companion</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="wordmark">CHAPPIE<span>.</span></div>
+      <div class="badge"><span class="dot" aria-hidden="true"></span>YOUR AUDIO COMPANION</div>
+    </header>
+    <h1>Your music. Your people.<br>One switch.</h1>
+    <p class="intro">Join a Discord voice channel, choose your music app, and turn Chappie on. Off returns that app to your private listening output.</p>
+
+    <section id="control-card" class="card" aria-label="Sharing control">
+      <div class="switch-row">
+        <div>
+          <div class="eyebrow">CHAPPIE IS</div>
+          <h2 id="phase">Getting ready…</h2>
+          <p id="description" class="description">Checking your connection and audio devices.</p>
+        </div>
+        <button id="toggle" class="switch" type="button" role="switch" aria-checked="false" aria-label="Turn Chappie on" disabled><span></span></button>
+      </div>
+      <div class="route">
+        <div class="route-icon" aria-hidden="true">♫</div>
+        <div><strong id="source-name">Choose your music app</strong><small id="destination">Connect your Discord account to get started.</small></div>
+      </div>
+      <p id="message" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="pair-card" class="card small-card" aria-labelledby="pair-heading">
+      <div class="eyebrow">FIRST TIME HERE?</div>
+      <h2 id="pair-heading">Connect your Discord account.</h2>
+      <p class="muted">Use the host address your Chappie host shared with you. Your Discord password stays in Discord.</p>
+      <label for="host">Chappie host address</label>
+      <div class="input-row"><input id="host" type="url" placeholder="https://your-chappie-host.example" autocomplete="url" spellcheck="false"><button id="connect" class="button primary" type="button">Connect Discord</button></div>
+      <div id="pairing" class="pairing" hidden>
+        <p>In a server where Chappie is installed, send this Discord slash command:</p>
+        <code id="pair-code"></code>
+        <p class="muted"><span id="pair-expiry"></span> Keep this app open while you pair.</p>
+      </div>
+    </section>
+
+    <section id="driver-card" class="notice" hidden>
+      <div><strong>One audio setup step left.</strong><p>Install VB-CABLE from its official website, restart if requested, then refresh your devices.</p></div>
+      <button id="driver-help" class="button" type="button">Get VB-CABLE</button>
+    </section>
+
+    <section id="turn-card" class="card small-card" hidden aria-labelledby="turn-heading">
+      <h2 id="turn-heading">Someone is sharing.</h2>
+      <p id="turn-description" class="muted"></p>
+      <button id="request-turn" class="button" type="button">Request a turn</button>
+    </section>
+
+    <section id="requests-card" class="card small-card" hidden aria-labelledby="requests-heading">
+      <h2 id="requests-heading">Your friends are waiting.</h2>
+      <p class="muted">Hand over when you are ready. Your music returns to private listening.</p>
+      <ul id="requests" class="requests"></ul>
+    </section>
+
+    <details id="setup">
+      <summary>Setup &amp; audio source</summary>
+      <div class="settings">
+        <p id="setup-note" class="note">Start playing a little audio if your app is missing, then refresh. You can switch music apps while sharing.</p>
+        <div><label for="app">Music browser or app</label><select id="app" aria-label="Music browser or app"></select></div>
+        <div><label for="output">Where to listen when Chappie is off</label><select id="output" aria-label="Private listening output"></select></div>
+        <div><label for="channel">Your Discord voice channel</label><select id="channel" aria-label="Discord voice channel"></select><p class="note">Join voice in Discord first. One group can use Chappie per server.</p></div>
+        <div class="settings-actions"><button id="refresh" class="button" type="button">Refresh apps &amp; channels</button><button id="disconnect" class="button quiet" type="button">Disconnect account</button></div>
+        <p id="account" class="note"></p>
+      </div>
+    </details>
+
+    <footer><span class="footer-arrow" aria-hidden="true">↗</span><p><strong>On:</strong> selected app → Chappie → your Discord channel.<br><strong>Off:</strong> selected app → your private output.<br>A browser shares its other tabs too. Keep Discord on your headphones to avoid echo.</p></footer>
+  </main>
+</body>
+</html>
