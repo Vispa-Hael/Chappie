@@ -69,7 +69,7 @@ npm run register
 npm start
 ```
 
-Play music during `check-audio`. It reads five seconds into memory and prints signal levels; it neither saves nor transmits the samples. `doctor` lists dependency versions, validates configuration presence, checks your recording device, and tests synthetic PCM-to-Opus encoding. It does not authenticate with Discord. `register` installs global commands for all servers that invite the bot and removes the original server-specific overrides. Run it again only when commands change. Global commands may take time to appear; restart Discord if needed. Keep `DISCORD_GUILD_ID` set to the original server for migration cleanup.
+Play music during `check-audio`. It reads five seconds into memory and prints signal levels; it neither saves nor transmits the samples. `doctor` lists dependency versions, validates configuration presence, checks your recording device, and tests synthetic PCM-to-Opus encoding. It does not authenticate with Discord. `register` installs commands immediately in every server where your bot is currently invited. Run it again only when commands change.
 
 ## 4. Use it
 
