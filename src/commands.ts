@@ -1,9 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 
 export const commands = [
-  new SlashCommandBuilder().setName('pair').setDescription('Link your Chappie Companion using its short code.')
-    .addStringOption(option => option.setName('code').setDescription('Code displayed in your companion app').setRequired(true).setMinLength(8).setMaxLength(8)),
-  new SlashCommandBuilder().setName('unpair').setDescription('Revoke all companion devices linked to your Discord account.'),
   new SlashCommandBuilder().setName('join').setDescription('Bring the audio relay into your voice channel.'),
   new SlashCommandBuilder().setName('start').setDescription('Broadcast the configured Windows audio input.'),
   new SlashCommandBuilder().setName('stop').setDescription('Stop broadcasting and release the recording device.'),

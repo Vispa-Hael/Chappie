@@ -10,7 +10,7 @@ The Windows system output and Discord output are left alone. The private destina
 
 The panel joins the configured owner's current voice channel. If the owner is connected to more than one server, leave the extra voice connections first. Panel Off stops all broadcasts; slash commands still support independent per-server sessions. Failed starts attempt to restore private routing; a pending recovery record allows Off to retry after a crash. If an app has closed, reopen it to restore its route. If your default Windows output is itself a cable, choose real headphones under Setup.
 
-This control panel runs only on your PC and does not implement the remote companion app for friends. Controls are bound to loopback with a per-run request key; the Discord bot token is never sent to the browser. Logs from background startup are in `.logs`. Routing uses the bundled freeware NirSoft SoundVolumeCommandLine utility; see THIRD_PARTY.md. The original terminal launcher remains available for development. Avoid launching two bot instances.
+This control panel runs only on your PC. Controls are bound to loopback with a per-run request key; the Discord bot token is never sent to the browser. Logs from background startup are in `.logs`. Routing uses the bundled freeware NirSoft SoundVolumeCommandLine utility; see THIRD_PARTY.md. The original terminal launcher remains available for development. Avoid launching two bot instances.
 
 Both ducking fades use smooth S-shaped easing curves, softening the start and end while retaining the 0.5-second fade down and 2-second rise.
 
@@ -83,6 +83,9 @@ Join a regular voice channel, then run:
 | `/stop` | Stops capture while staying in voice |
 | `/leave` | Stops capture and disconnects |
 | `/status` | Shows connection, broadcast, volume, and last failure |
+| `/playpause` | Toggle play or pause in the active Windows music player |
+| `/skip` | Move the active Windows music player to its next track |
+| `/rewind` | Restart or move to the previous track in the active player |
 
 Play/pause/skip tracks in your music app. To move the bot, use `/leave` in its current channel, join another channel, and use `/start`. Commands respond privately. Volume changes last until restart; edit `DEFAULT_VOLUME` for a persistent default.
 

@@ -6,13 +6,4 @@ dist/
 .logs/
 .routing-state.json
 tools/svcl.zip
-.remote-devices.json
-.remote-devices.json.*
-.remote-host.json
-companion/node_modules/
-companion/dist/
-companion/build/
-release/
 .secrets/
-tools/cloudflared/
-SHARING-PLAN.md
