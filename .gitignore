@@ -14,3 +14,5 @@ companion/dist/
 companion/build/
 release/
 .secrets/
+tools/cloudflared/
+SHARING-PLAN.md

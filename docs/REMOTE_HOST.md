@@ -16,6 +16,8 @@ The companion routes a selected app through VB-CABLE and sends the cable's audio
 
 Start with `npm start` or the existing local launcher. Verify `/health` on the relay through the HTTPS address before giving it to friends. Configure that address under Setup in the companion.
 
+For a temporary test link, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/remote-test-tunnel.ps1` on the host. This downloads a checksum-pinned official cloudflared executable, starts a hidden tunnel forwarding only the remote relay, verifies its HTTPS health, and prints the address. Run the same command with `-Stop` to close it. The saved `.remote-host.json` and tool binary are ignored by Git. This is optional test hosting, not an installed service or a stable domain. Cloudflare Quick Tunnels have no uptime guarantee and the URL can change after restart: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ .
+
 ## Pairing and rights
 
 The app obtains a short-lived pairing code and a separate polling secret. The user enters `/pair CODE` in Discord. The bot links that request to the authenticated caller; the desktop proves possession of its polling secret to obtain a device token. Only enter codes displayed in your own app. `/unpair` revokes that account's devices and active shares.
