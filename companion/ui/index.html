@@ -38,8 +38,8 @@
       <h2 id="pair-heading">Connect your Discord account.</h2>
       <p class="muted">Use the host address your Chappie host shared with you. Your Discord password stays in Discord.</p>
       <label for="host">Chappie host address</label>
-      <div class="input-row"><input id="host" type="url" placeholder="https://your-chappie-host.example" autocomplete="url" spellcheck="false"><button id="connect" class="button primary" type="button">Connect Discord</button></div>
-      <div id="pairing" class="pairing" hidden>
+        <div class="input-row"><input id="host" type="url" placeholder="https://your-chappie-host.example" autocomplete="url" spellcheck="false"><button id="connect" class="button primary" type="button">Get pairing code</button></div>
+      <div id="pairing" class="pairing" hidden tabindex="-1" role="status" aria-live="polite">
         <p>In a server where Chappie is installed, send this Discord slash command:</p>
         <code id="pair-code"></code>
         <p class="muted"><span id="pair-expiry"></span> Keep this app open while you pair.</p>

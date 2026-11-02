@@ -6,6 +6,7 @@ let current = null;
 let pending = false;
 let localError = '';
 let localMessage = '';
+let visiblePairCode = '';
 
 function setOptions(select, items, selected, emptyLabel) {
   const normalized = items.length ? items : [{ id: '', name: emptyLabel }];
@@ -76,11 +77,16 @@ function render(value) {
     const expiry = new Date(state.pairing.expiresAt);
     byId('pair-expiry').textContent = Number.isFinite(expiry.getTime())
       ? `Code expires at ${expiry.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` : 'This code expires shortly.';
-  }
+    if (visiblePairCode !== state.pairing.code) {
+      visiblePairCode = state.pairing.code;
+      byId('pairing').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      byId('pairing').focus({ preventScroll: true });
+    }
+  } else visiblePairCode = '';
   if (document.activeElement !== byId('host')) byId('host').value = state.host || '';
   byId('host').disabled = busy || sharing || !!state.pairing;
   byId('connect').disabled = busy || !!state.pairing;
-  byId('connect').textContent = state.pairing ? 'Waiting for pairing…' : 'Connect Discord';
+  byId('connect').textContent = state.pairing ? 'Code ready — enter it in Discord' : 'Get pairing code';
   byId('driver-card').hidden = state.cableReady;
   byId('driver-help').disabled = busy;
 

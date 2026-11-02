@@ -4,12 +4,22 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $relayStatePath = Join-Path $projectRoot '.remote-host.json'
 $relayToolDir = Join-Path $projectRoot 'tools\cloudflared'
 $relayExecutable = Join-Path $relayToolDir 'cloudflared.exe'
+function Get-RelayPublicHealth([string]$Address) {
+    try { return Invoke-RestMethod "$Address/health" -TimeoutSec 3 }
+    catch {
+        # Fresh quick-tunnel names can be negatively cached by local DNS.
+        # DNS-over-HTTPS checks public reachability without changing Windows DNS.
+        $relayReply = (& curl.exe --fail --silent --show-error --max-time 8 --doh-url https://cloudflare-dns.com/dns-query "$Address/health" 2>$null) -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw 'Public HTTPS health is not ready.' }
+        return $relayReply | ConvertFrom-Json
+    }
+}
 if (Test-Path -LiteralPath $relayStatePath) {
     $relaySaved = Get-Content -LiteralPath $relayStatePath -Raw | ConvertFrom-Json
     $relayRunning = Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$relaySaved.processId)" -ErrorAction SilentlyContinue
     if ($relayRunning -and $relayRunning.ExecutablePath -eq $relayExecutable) {
         if ($Stop) { Stop-Process -Id $relayRunning.ProcessId; Remove-Item -LiteralPath $relayStatePath; Write-Output 'Temporary Chappie tunnel stopped.'; exit }
-        try { $health = Invoke-RestMethod "$($relaySaved.url)/health" -TimeoutSec 5; if ($health.service -eq 'chappie-remote') { Write-Output $relaySaved.url; exit } } catch { }
+        try { $health = Get-RelayPublicHealth $relaySaved.url; if ($health.service -eq 'chappie-remote') { Write-Output $relaySaved.url; exit } } catch { }
         throw 'A tunnel process is still running but not healthy. Run this script with -Stop before starting another.'
     }
 }
@@ -34,7 +44,7 @@ for ($attempt = 0; $attempt -lt 50; $attempt++) {
     if ($relayMatch.Success) {
         $relayAddress = $relayMatch.Value
         try {
-            $health = Invoke-RestMethod "$relayAddress/health" -TimeoutSec 5
+            $health = Get-RelayPublicHealth $relayAddress
             if ($health.service -eq 'chappie-remote') {
                 @{url=$relayAddress;processId=$relayProcess.Id;version='2026.10.7';startedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath $relayStatePath -Encoding UTF8
                 Write-Output $relayAddress
