@@ -5,5 +5,11 @@ node_modules/
 dist/
 .logs/
 .routing-state.json
+.remote-devices.json
+.remote-devices.json.*
+.remote-host.json
+companion/build/
+tools/cloudflared/
+SHARING-PLAN.md
 tools/svcl.zip
 .secrets/
