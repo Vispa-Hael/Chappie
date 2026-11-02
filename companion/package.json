@@ -1,7 +1,7 @@
 {
   "name": "chappie-companion",
   "productName": "Chappie Companion",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Share your desktop music through Chappie in Discord.",
   "author": "Vispa-Hael",
   "private": true,

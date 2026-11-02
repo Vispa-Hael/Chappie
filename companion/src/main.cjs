@@ -3,7 +3,7 @@ const {app,BrowserWindow,ipcMain,safeStorage,shell}=require('electron');
 const {readFile,writeFile,mkdir,rename}=require('node:fs/promises');
 const path=require('node:path');
 const {CompanionRuntime,WindowsAudio}=require('./runtime.cjs');
-let window,runtime,closing=false;
+let window,runtime,closing=false,contextTimer;
 if(!app.requestSingleInstanceLock()){app.quit();}else{
   app.on('second-instance',()=>{if(window){window.show();window.focus();}});
   app.whenReady().then(async()=>{
@@ -32,9 +32,11 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
       return methods[method](payload);
     });
     try{await runtime.init();}catch(error){runtime.error=error.message;runtime.phase='error';}
+    contextTimer=setInterval(()=>{if(!closing)void runtime.refreshContext();},3000);
+    contextTimer.unref();
     await window.loadFile(path.join(__dirname,'../ui/index.html'));
-    window.on('close',event=>{if(closing)return;event.preventDefault();closing=true;runtime.cancelPair();void runtime.stop().finally(()=>app.quit());});
+    window.on('close',event=>{if(closing)return;event.preventDefault();closing=true;clearInterval(contextTimer);runtime.cancelPair();void runtime.stop().finally(()=>app.quit());});
   }).catch(error=>{console.error('Chappie could not start:',error.message);app.quit();});
   app.on('window-all-closed',()=>app.quit());
-  app.on('before-quit',event=>{if(runtime&&!closing){event.preventDefault();closing=true;runtime.cancelPair();void runtime.stop().finally(()=>app.quit());}});
+  app.on('before-quit',event=>{if(runtime&&!closing){event.preventDefault();closing=true;clearInterval(contextTimer);runtime.cancelPair();void runtime.stop().finally(()=>app.quit());}});
 }

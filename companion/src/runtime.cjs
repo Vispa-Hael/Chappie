@@ -75,6 +75,25 @@ class CompanionRuntime extends EventEmitter {
     if(!this.config.guildId&&this.context.channels?.length===1)this.config.guildId=this.context.channels[0].guildId;
     this.changed();return this.snapshot();
   }
+  refreshContext(){
+    if(!this.token||this.busy)return Promise.resolve(this.snapshot());
+    if(this.contextRequest)return this.contextRequest;
+    const host=this.config.host,token=this.token;
+    this.contextRequest=(async()=>{
+      try{
+        const context=await this.request('/v1/context');
+        if(this.config.host!==host||this.token!==token)return this.snapshot();
+        this.context=context;
+        if(this.error===this.contextError)this.error='';
+        this.contextError=undefined;
+        if(!this.config.guildId&&context.channels?.length===1)this.config.guildId=context.channels[0].guildId;
+        this.changed();
+      }catch(error){if(this.config.host===host&&this.token===token){this.contextError=error.message;this.error=error.message;this.changed();}}
+      finally{this.contextRequest=null;}
+      return this.snapshot();
+    })();
+    return this.contextRequest;
+  }
   async configure(data){
     const switchSource=this.phase==='sharing'&&Object.keys(data).length===1&&data.app!==undefined;
     if(this.busy||(this.phase==='sharing'&&!switchSource))throw Error('Turn sharing off before changing setup.');

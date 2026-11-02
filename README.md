@@ -41,6 +41,6 @@ npm run companion:dist
 node scripts/audit-release.mjs
 ```
 
-The NSIS installer is written to `companion/dist`. Packaging uses an explicit allowlist and excludes host configuration, `.env`, logs, device tokens, and runtime state. GitHub Actions tests/builds on Windows; tag `v1.1.0` or run the workflow manually to publish the preview installer and checksum.
+The NSIS installer is written to `companion/dist`. Packaging uses an explicit allowlist and excludes host configuration, `.env`, logs, device tokens, and runtime state. GitHub Actions tests/builds on Windows; tag the current version (for example `v1.1.1`) or run the workflow manually to publish the preview installer and checksum. The companion automatically refreshes voice availability and turn requests while paired.
 
 Pairing requires proof from both the desktop request and an authenticated Discord interaction. Device tokens are random and hash-only on the host; desktop storage uses Windows-protected encryption. `/unpair` revokes your devices. Audio is streamed in memory, not saved or transcribed. See [third-party notices](THIRD_PARTY.md).
