@@ -55,3 +55,16 @@ test('cancel during a late claim never starts capture or leaves Windows routed i
   await runtime.init();const starting=runtime.start();await claimed;await runtime.stop();finishClaim({leaseId:'late',websocketPath:'/v1/audio?leaseId=late'});await starting;
   assert.equal(captured,false);assert.deepEqual(routes,[]);assert.equal(runtime.phase,'off');
 });
+
+test('recovery restores a closed app without requiring active audio and clears stale errors after refresh',async()=>{
+  const calls:unknown[][]=[];
+  const runtime=new CompanionRuntime({audio:{
+    async inventory(){return {apps:[],outputs:[{id:'private',name:'Phones',isDefault:true}],cableId:'cable'};},
+    async route(...args:unknown[]){calls.push(args);},capture(){return {stop(){}};},
+  },load:async()=>({host:'https://host.example',app:'spotify.exe',privateOutput:'DefaultRenderDevice',recovery:{app:'spotify.exe',privateOutput:'DefaultRenderDevice'}}),save:async()=>{}});
+  runtime.error='Old recovery warning';
+  await runtime.init();
+  assert.deepEqual(calls,[['spotify.exe','DefaultRenderDevice',{allowInactive:true}]]);
+  assert.equal(runtime.error,'');
+  assert.equal(runtime.snapshot().phase,'off');
+});

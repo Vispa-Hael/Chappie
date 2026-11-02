@@ -29,9 +29,9 @@ function parseInventory(raw) {
 class WindowsAudio {
   constructor(directory){this.directory=directory;}
   async inventory(){const {stdout}=await execute(path.join(this.directory,'svcl','svcl.exe'),['/sjson',''],{windowsHide:true,timeout:10000,maxBuffer:4*1024*1024});return parseInventory(stdout);}
-  async route(app,device){
+  async route(app,device,{allowInactive=false}={}){
     const info=await this.inventory();
-    if(!info.apps.some(a=>a.id===app))throw Error('Open your music app and play audio, then refresh.');
+    if(!info.apps.some(a=>a.id===app)&&!allowInactive)throw Error('Open your music app and play audio, then refresh.');
     if(device!=='DefaultRenderDevice'&&device!==info.cableId&&!info.outputs.some(o=>o.id===device))throw Error('That audio output is no longer available.');
     await execute(path.join(this.directory,'svcl','svcl.exe'),['/SetAppDefault',device,'all',app],{windowsHide:true,timeout:10000});
   }
@@ -60,7 +60,7 @@ class CompanionRuntime extends EventEmitter {
     const data=await this.load();
     if(data){this.config={host:data.host||'',app:data.app||'chrome.exe',privateOutput:data.privateOutput||'DefaultRenderDevice',guildId:data.guildId,recovery:data.recovery};this.token=data.token;this.user=data.user;}
     try{this.inventory=await this.audio.inventory();}catch{this.error='Windows audio helper is unavailable.';}
-    if(this.config.recovery){try{await this.audio.route(this.config.recovery.app,this.config.recovery.privateOutput);delete this.config.recovery;await this.persist();this.message='Recovered your private audio after the previous session.';}catch{this.error='Reopen your music app, then switch off to restore private listening.';}}
+    if(this.config.recovery){try{await this.audio.route(this.config.recovery.app,this.config.recovery.privateOutput,{allowInactive:true});delete this.config.recovery;await this.persist();this.message='Recovered your private audio after the previous session.';}catch{this.error='Could not restore private audio automatically. Open Chappie again after your music app is available.';}}
     await this.refresh();return this.snapshot();
   }
   async request(endpoint,body,authenticated=true,timeout=15000){
@@ -70,7 +70,7 @@ class CompanionRuntime extends EventEmitter {
     const result=await response.json();if(!response.ok)throw Error(result.error||'The Chappie host rejected the request.');return result;
   }
   async refresh(){
-    try{this.inventory=await this.audio.inventory();if(this.token)this.context=await this.request('/v1/context');}
+    try{this.inventory=await this.audio.inventory();if(this.token)this.context=await this.request('/v1/context');this.error='';}
     catch(error){this.error=error.message;}
     if(!this.config.guildId&&this.context.channels?.length===1)this.config.guildId=this.context.channels[0].guildId;
     this.changed();return this.snapshot();
@@ -167,7 +167,7 @@ class CompanionRuntime extends EventEmitter {
     finally{this.busy=false;this.changed();}
     return this.snapshot();
   }
-  setRoute(app,device){const operation=this.routeQueue.catch(()=>{}).then(()=>this.audio.route(app,device));this.routeQueue=operation;return operation;}
+  setRoute(app,device,options){const operation=this.routeQueue.catch(()=>{}).then(()=>this.audio.route(app,device,options));this.routeQueue=operation;return operation;}
   cleanup(){
     if(this.cleanupPromise)return this.cleanupPromise;
     this.cleanupPromise=this.doCleanup().finally(()=>{this.cleanupPromise=null;});
@@ -178,7 +178,7 @@ class CompanionRuntime extends EventEmitter {
     const socket=this.socket;this.socket=null;socket?.terminate();
     const lease=this.lease;this.lease=null;
     const releasing=lease?this.request('/v1/release',{leaseId:lease},true,2500).catch(()=>{}):Promise.resolve();
-    if(this.config.recovery){await this.setRoute(this.config.recovery.app,this.config.recovery.privateOutput);delete this.config.recovery;await this.persist();}
+    if(this.config.recovery){await this.setRoute(this.config.recovery.app,this.config.recovery.privateOutput,{allowInactive:true});delete this.config.recovery;await this.persist();}
     await releasing;
   }
   async stop(message='Chappie is off. Your music is back on your private output.'){

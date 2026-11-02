@@ -9,6 +9,7 @@ Windows desktop companion for sharing your selected music app through the centra
 - Turn requests and voice-channel availability refresh automatically.
 - Song requests let friends add titles or HTTPS links; only the active sharer can accept, open, play, or decline them.
 - Companion updates are checked manually, downloaded from the official GitHub release, rehashed, and installed only after a Windows confirmation.
+- Recovery now restores the chosen app’s private output even when that app is closed, and clears obsolete recovery warnings after a successful refresh.
 - Stereo audio, microphone-only smooth volume ducking, and recovery when the network disconnects.
 - The installer contains no Discord bot token. Paired device credentials are protected with Windows encryption.
 
