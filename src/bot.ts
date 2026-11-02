@@ -4,6 +4,7 @@ import { RelaySession } from './session.js';
 import { startPanel } from './panel.js';
 import type { Server } from 'node:http';
 import { createRemoteService } from './remote/service.js';
+import { controlMedia, type MediaAction } from './media-control.js';
 
 const config = discordConfig();
 const device = required('AUDIO_DEVICE');
@@ -41,6 +42,15 @@ client.on('interactionCreate', async interaction => {
       return;
     }
     const owner = interaction.user.id === config.ownerId;
+    const mediaAction: Record<string, MediaAction> = { playpause: 'playpause', skip: 'next', rewind: 'previous' };
+    if (interaction.commandName in mediaAction) {
+      if (!owner) { await interaction.reply({ content: 'Only the Chappie host owner can control its Windows music app.', flags: MessageFlags.Ephemeral }); return; }
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      await controlMedia(mediaAction[interaction.commandName]);
+      const labels: Record<string, string> = { playpause: 'play/pause', skip: 'next track', rewind: 'previous track' };
+      await interaction.editReply(`Sent ${labels[interaction.commandName]} to your Windows music app.`);
+      return;
+    }
     if (!owner && !remote?.isPaired(interaction.user.id)) {
       await interaction.reply({ content: 'Pair your Chappie Companion first using /pair and the code shown in your app.', flags: MessageFlags.Ephemeral });
       return;
