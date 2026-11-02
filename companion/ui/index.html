@@ -63,6 +63,22 @@
       <ul id="requests" class="requests"></ul>
     </section>
 
+    <section id="songs-card" class="card small-card" hidden aria-labelledby="songs-heading">
+      <h2 id="songs-heading">Song requests</h2>
+      <p class="muted">Add a song or link for the person sharing. They choose what to play in their own music app.</p>
+      <div class="song-form">
+        <label for="song-title">Song title</label><input id="song-title" maxlength="160" placeholder="Artist — song" autocomplete="off">
+        <label for="song-url">HTTPS link (optional)</label><input id="song-url" type="url" maxlength="2048" placeholder="https://…" autocomplete="url">
+        <label for="song-note">Note (optional)</label><input id="song-note" maxlength="300" placeholder="Anything the sharer should know" autocomplete="off">
+        <button id="song-submit" class="button primary" type="button">Add request</button>
+      </div>
+      <ul id="songs" class="requests songs"></ul>
+    </section>
+
+    <section id="updates-card" class="card small-card" aria-labelledby="updates-heading">
+      <div class="update-row"><div><div class="eyebrow">APP &amp; UPDATES</div><h2 id="updates-heading">Chappie Companion</h2><p id="update-status" class="muted"></p></div><div id="update-actions" class="update-actions"></div></div>
+    </section>
+
     <details id="setup">
       <summary>Setup &amp; audio source</summary>
       <div class="settings">

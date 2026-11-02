@@ -12,7 +12,7 @@ Share music already playing on your Windows PC with friends in a Discord voice c
 4. Click Pair. In a server where Chappie is installed, use `/pair CODE` with the code shown in your own app.
 5. Join voice, select your music browser/app under Setup, and switch On. Off disconnects your session and returns the selected app to normal headphones/speakers.
 
-Only one person shares at a time in each server. Other paired users can request a turn; the active sharer can hand over. Different servers have independent sessions. The host PC and app must stay running. If connected to multiple servers, select the intended server in Setup.
+Only one person shares at a time in each server. Other paired users can request a turn; the active sharer can hand over. The shared song board lets friends submit titles or HTTPS links; the current sharer decides what to open and play in their own music app. Different servers have independent sessions. The host PC and app must stay running. If connected to multiple servers, select the intended server in Setup.
 
 The initial preview supports Windows 10/11 x64 with VB-CABLE. A host address is required; the installer alone is not a public relay service. A temporary tunnel address may change when its host restarts. Bluetooth call-mode limitations can still affect how Discord sounds on phones and car systems.
 
@@ -41,6 +41,6 @@ npm run companion:dist
 node scripts/audit-release.mjs
 ```
 
-The NSIS installer is written to `companion/dist`. Packaging uses an explicit allowlist and excludes host configuration, `.env`, logs, device tokens, and runtime state. GitHub Actions tests/builds on Windows; tag the current version (for example `v1.1.1`) or run the workflow manually to publish the preview installer and checksum. The companion automatically refreshes voice availability and turn requests while paired.
+The NSIS installer is written to `companion/dist`. Packaging uses an explicit allowlist and excludes host configuration, `.env`, logs, device tokens, and runtime state. GitHub Actions tests/builds on Windows; tag the current version (for example `v1.2.0`) or run the workflow manually to publish the preview installer and checksum. The companion automatically refreshes voice availability, requests, and the song board while paired. From version 1.2 onward it can check, download, rehash, and prompt before installing verified GitHub releases.
 
 Pairing requires proof from both the desktop request and an authenticated Discord interaction. Device tokens are random and hash-only on the host; desktop storage uses Windows-protected encryption. `/unpair` revokes your devices. Audio is streamed in memory, not saved or transcribed. See [third-party notices](THIRD_PARTY.md).

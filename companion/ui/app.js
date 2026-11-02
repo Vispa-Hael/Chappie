@@ -4,6 +4,7 @@ const bridge = window.chappie;
 const byId = id => document.getElementById(id);
 let current = null;
 let pending = false;
+let updatePending = false;
 let localError = '';
 let localMessage = '';
 let visiblePairCode = '';
@@ -31,10 +32,10 @@ function selectedGuild(state) {
 function render(value) {
   if (!value || typeof value !== 'object') return;
   const state = {
-    phase: 'off', host: '', apps: [], outputs: [], channels: [], sharing: [], requests: [],
+    phase: 'off', host: '', apps: [], outputs: [], channels: [], sharing: [], requests: [], songRequests: [], updates: { phase: 'idle', currentVersion: '' },
     app: '', privateOutput: 'DefaultRenderDevice', cableReady: false, ...value,
   };
-  for (const key of ['apps', 'outputs', 'channels', 'sharing', 'requests']) {
+  for (const key of ['apps', 'outputs', 'channels', 'sharing', 'requests', 'songRequests']) {
     if (!Array.isArray(state[key])) state[key] = [];
   }
   current = state;
@@ -127,6 +128,41 @@ function render(value) {
     list.dataset.requests = requestSignature;
   }
   for (const button of list.querySelectorAll('button')) button.disabled = busy;
+
+  const songsCard = byId('songs-card');
+  songsCard.hidden = !paired || !guildId;
+  const songs = state.songRequests.filter(item => item.guildId === guildId && ['requested', 'accepted'].includes(item.status));
+  const songsList = byId('songs');
+  const songSignature = JSON.stringify(songs.map(item => [item.id, item.title, item.url, item.note, item.status, item.userId]));
+  if (songsList.dataset.songs !== songSignature) {
+    songsList.replaceChildren();
+    for (const song of songs) {
+      const item = document.createElement('li');
+      const copy = document.createElement('span');
+      const detail = song.note ? ` — ${song.note}` : '';
+      copy.textContent = `${song.title} · ${song.userName || 'A friend'} (${song.status})${detail}`;
+      item.append(copy);
+      const actions = document.createElement('span'); actions.className = 'song-actions';
+      const add = (label, action, fn) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'button'; button.textContent = label; button.dataset.songAction = action; button.addEventListener('click', fn); actions.append(button); };
+      if (sharing && song.userId !== state.user?.id) {
+        if (song.status === 'requested') { add('Accept', 'accept', () => run(() => bridge.songAction({ requestId: song.id, action: 'accept' }))); add('Decline', 'decline', () => run(() => bridge.songAction({ requestId: song.id, action: 'decline' }))); }
+        if (song.status === 'accepted') { if (song.url) add('Open link', 'open', () => run(() => bridge.openSong(song.id))); add('Mark played', 'played', () => run(() => bridge.songAction({ requestId: song.id, action: 'played' }))); }
+      } else if (song.userId === state.user?.id) add('Cancel', 'cancel', () => run(() => bridge.songAction({ requestId: song.id, action: 'cancel' })));
+      item.append(actions); songsList.append(item);
+    }
+    songsList.dataset.songs = songSignature;
+  }
+  byId('song-submit').disabled = busy;
+  for (const button of songsList.querySelectorAll('button')) button.disabled = busy;
+
+  const update = state.updates && typeof state.updates === 'object' ? state.updates : { phase: 'idle', currentVersion: '' };
+  const updateText = { idle: `Version ${update.currentVersion || 'unknown'}. Check GitHub when you want.`, checking: 'Checking GitHub for updates…', current: `You are up to date (v${update.currentVersion}).`, available: `Version ${update.availableVersion} is ready to download.`, downloading: `Downloading verified update${Number.isFinite(update.progress) ? ` — ${update.progress}%` : ''}.`, downloaded: `Version ${update.availableVersion} is verified and ready to install.`, error: update.error || 'Could not check for updates.' };
+  byId('update-status').textContent = updateText[update.phase] || updateText.idle;
+  const actions = byId('update-actions'); actions.replaceChildren();
+  const addUpdate = (label, fn, primary = false) => { const button = document.createElement('button'); button.type = 'button'; button.className = `button${primary ? ' primary' : ''}`; button.textContent = label; button.disabled = updatePending || ['checking', 'downloading'].includes(update.phase); button.addEventListener('click', fn); actions.append(button); };
+  if (update.phase === 'available') addUpdate('Download update', () => runUpdate(() => bridge.downloadUpdate()));
+  else if (update.phase === 'downloaded') addUpdate('Install and restart', () => runUpdate(() => bridge.installUpdate()), true);
+  else addUpdate(update.phase === 'error' ? 'Try again' : 'Check for updates', () => runUpdate(() => bridge.checkUpdates()));
   if (!paired || !state.app || !guildId) byId('setup').open = true;
 }
 
@@ -144,6 +180,15 @@ async function run(action, message = '') {
     pending = false; localMessage = '';
     if (current) render(current);
   }
+}
+
+async function runUpdate(action) {
+  if (updatePending) return;
+  updatePending = true; localError = '';
+  if (current) render(current);
+  try { const state = await action(); if (state && typeof state === 'object') render(state); }
+  catch (error) { localError = error instanceof Error ? error.message : 'Update could not be completed.'; }
+  finally { updatePending = false; if (current) render(current); }
 }
 
 if (!bridge) {
@@ -166,6 +211,10 @@ if (!bridge) {
   byId('output').addEventListener('change', () => { const privateOutput = byId('output').value; return run(() => bridge.configure({ privateOutput })); });
   byId('channel').addEventListener('change', () => { const guildId = byId('channel').value; return run(() => bridge.configure({ guildId })); });
   byId('request-turn').addEventListener('click', () => run(() => bridge.requestTurn(), 'Requesting a turn…'));
+  byId('song-submit').addEventListener('click', () => {
+    const title = byId('song-title').value.trim(), url = byId('song-url').value.trim(), note = byId('song-note').value.trim();
+    return run(async () => { if (!title && !url) throw new Error('Enter a song title or HTTPS link.'); const state = await bridge.requestSong({ title, url, note }); byId('song-title').value = ''; byId('song-url').value = ''; byId('song-note').value = ''; return state; }, 'Adding your song request…');
+  });
   byId('disconnect').addEventListener('click', () => run(() => bridge.unpair(), 'Disconnecting your account…'));
   byId('driver-help').addEventListener('click', () => run(() => bridge.openDriverHelp()));
   bridge.onState(render);

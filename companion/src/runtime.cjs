@@ -48,12 +48,12 @@ class CompanionRuntime extends EventEmitter {
   constructor({audio,load,save,fetchImpl=fetch,Socket=WebSocket}) {
     super();this.audio=audio;this.load=load;this.save=save;this.fetch=fetchImpl;this.Socket=Socket;
     this.config={host:'',app:'chrome.exe',privateOutput:'DefaultRenderDevice'};
-    this.phase='off';this.message='';this.error='';this.inventory={apps:[],outputs:[]};this.context={channels:[],sharing:[],requests:[]};
+    this.phase='off';this.message='';this.error='';this.inventory={apps:[],outputs:[]};this.context={channels:[],sharing:[],requests:[],songRequests:[]};
     this.busy=false;this.socket=null;this.capture=null;this.lease=null;this.pairing=null;this.generation=0;this.routeQueue=Promise.resolve();this.cleanupPromise=null;this.saveQueue=Promise.resolve();
   }
   snapshot(){return {...this.config,token:undefined,recovery:undefined,phase:this.phase,user:this.user,pairing:this.pairing?{code:this.pairing.code,expiresAt:this.pairing.expiresAt}:undefined,
     error:this.error,message:this.message,apps:this.inventory.apps,outputs:this.inventory.outputs,cableReady:!!this.inventory.cableId,
-    channels:this.context.channels||[],sharing:this.context.sharing||[],requests:this.context.requests||[]};}
+    channels:this.context.channels||[],sharing:this.context.sharing||[],requests:this.context.requests||[],songRequests:this.context.songRequests||[]};}
   changed(){this.emit('state',this.snapshot());}
   persist(){const value=structuredClone({...this.config,token:this.token,user:this.user});const operation=this.saveQueue.catch(()=>{}).then(()=>this.save(value));this.saveQueue=operation;return operation;}
   async init(){
@@ -98,7 +98,7 @@ class CompanionRuntime extends EventEmitter {
     const switchSource=this.phase==='sharing'&&Object.keys(data).length===1&&data.app!==undefined;
     if(this.busy||(this.phase==='sharing'&&!switchSource))throw Error('Turn sharing off before changing setup.');
     if(switchSource){await this.stop();if(this.config.recovery)throw Error('Restore private audio before switching sources.');}
-    if(data.host!==undefined){const host=hostAddress(data.host);if(host!==this.config.host){this.token=undefined;this.user=undefined;this.context={channels:[],sharing:[],requests:[]};this.config.host=host;this.cancelPair();}}
+    if(data.host!==undefined){const host=hostAddress(data.host);if(host!==this.config.host){this.token=undefined;this.user=undefined;this.context={channels:[],sharing:[],requests:[],songRequests:[]};this.config.host=host;this.cancelPair();}}
     if(data.app!==undefined){if(!this.inventory.apps.some(a=>a.id===data.app))throw Error('Choose an available music app.');this.config.app=data.app;}
     if(data.privateOutput!==undefined){if(data.privateOutput!=='DefaultRenderDevice'&&!this.inventory.outputs.some(o=>o.id===data.privateOutput))throw Error('Choose an available private output.');this.config.privateOutput=data.privateOutput;}
     if(data.guildId!==undefined)this.config.guildId=String(data.guildId);
@@ -182,13 +182,28 @@ class CompanionRuntime extends EventEmitter {
     await releasing;
   }
   async stop(message='Chappie is off. Your music is back on your private output.'){
-    if(this.phase==='stopping')return this.snapshot();++this.generation;this.phase='stopping';this.changed();
+    if(this.stopPromise)return this.stopPromise;
+    this.stopPromise=this.doStop(message).finally(()=>{this.stopPromise=null;});
+    return this.stopPromise;
+  }
+  async doStop(message){
+    ++this.generation;this.phase='stopping';this.changed();
     try{await this.cleanup();this.phase='off';this.error='';this.message=message;}catch(error){this.phase='error';this.error='Could not restore audio: '+error.message;}
     this.changed();return this.snapshot();
   }
   async toggle(){return this.phase==='sharing'||this.phase==='starting'||this.config.recovery?this.stop():this.start();}
   async requestTurn(){await this.request('/v1/request-turn',{guildId:this.config.guildId});this.message='Your turn request was sent to the current sharer.';return this.refresh();}
   async handoff(userId){await this.request('/v1/handoff',{guildId:this.config.guildId,userId});await this.stop('Your turn ended. The next person can switch on.');return this.refresh();}
-  async unpair(){await this.stop();this.cancelPair();this.token=undefined;this.user=undefined;this.context={channels:[],sharing:[],requests:[]};await this.persist();return this.snapshot();}
+  async requestSong(data){
+    if(!this.config.guildId)throw Error('Choose your Discord voice channel first.');
+    await this.request('/v1/song-request',{guildId:this.config.guildId,title:data?.title,url:data?.url,note:data?.note});
+    this.message='Song request added to the shared board.';return this.refreshContext();
+  }
+  async songAction(requestId,action){
+    if(!this.config.guildId)throw Error('Choose your Discord voice channel first.');
+    await this.request('/v1/song-request-action',{guildId:this.config.guildId,requestId,action});
+    this.message='Song request updated.';return this.refreshContext();
+  }
+  async unpair(){await this.stop();this.cancelPair();this.token=undefined;this.user=undefined;this.context={channels:[],sharing:[],requests:[],songRequests:[]};await this.persist();return this.snapshot();}
 }
 module.exports={hostAddress,parseInventory,WindowsAudio,CompanionRuntime};

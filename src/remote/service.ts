@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
+import { SongRequestBoard, SongRequestError } from './song-requests.js';
 
 export interface RemoteChannel { guildId: string; guildName: string; channelId: string; channelName: string }
 export interface RemoteController {
@@ -44,6 +45,7 @@ export async function createRemoteService(controller: RemoteController, options:
   const turns = new Map<string, Turn[]>();
   const reservations = new Map<string, { userId: string; expiresAt: number }>();
   const limits = new Map<string, { at: number; count: number }>();
+  const songs = new SongRequestBoard(now);
   let persistence = Promise.resolve();
   let closed = false;
   try {
@@ -67,6 +69,7 @@ export async function createRemoteService(controller: RemoteController, options:
     return persistence;
   }
   function prune() {
+    songs.prune();
     for (const [key, device] of devices) if (device.expiresAt <= now()) devices.delete(key);
     for (const [id, pair] of pairings) if (pair.expiresAt <= now()) pairings.delete(id);
     for (const [id, reservation] of reservations) if (reservation.expiresAt <= now()) reservations.delete(id);
@@ -163,9 +166,22 @@ export async function createRemoteService(controller: RemoteController, options:
           sharing: [...byGuild.values()].filter(lease => visible.has(lease.guildId)).map(lease => ({ guildId: lease.guildId, userId: lease.userId, userName: lease.userName,
             ...(lease.userId === device.userId ? { leaseId: lease.id } : {}), closing: !!lease.closing })),
           requests: [...turns.values()].flat().filter(turn => turn.userId === device.userId || byGuild.get(turn.guildId)?.userId === device.userId),
+          songRequests: songs.list(visible),
           reservations: [...reservations].filter(([, value]) => value.userId === device.userId).map(([guildId, value]) => ({ guildId, ...value })) });
       }
       const data = await body(request);
+      if (path === '/v1/song-request' && request.method === 'POST') {
+        const guildId = input(data.guildId, 'server');
+        await eligible(device.userId, guildId);
+        return send(response, 201, { request: songs.create(guildId, device.userId, device.name, data) });
+      }
+      if (path === '/v1/song-request-action' && request.method === 'POST') {
+        const guildId = input(data.guildId, 'server');
+        await eligible(device.userId, guildId);
+        const lease = byGuild.get(guildId);
+        const broadcaster = lease?.ready && !lease.closing ? lease.userId : undefined;
+        return send(response, 200, { request: songs.action(guildId, input(data.requestId, 'song request'), device.userId, broadcaster, data.action) });
+      }
       if (path === '/v1/claim' && request.method === 'POST') {
         const guildId = input(data.guildId, 'server');
         const channel = await eligible(device.userId, guildId);
@@ -213,7 +229,7 @@ export async function createRemoteService(controller: RemoteController, options:
       }
       throw new HttpError(404, 'Not found.');
     } catch (error) {
-      const known = error instanceof HttpError;
+      const known = error instanceof HttpError || error instanceof SongRequestError;
       send(response, known ? error.status : 500, { error: known ? error.message : 'Host operation failed. Check the host console.' });
     }
   });
